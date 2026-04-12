@@ -1,17 +1,109 @@
 '''
 
-payment status enum -> pending, succ, failed, refunded
-currency
-payment method
+requirements:
+1. process payments via multiple gateways
+2. support multiple payment methods
+3. support multiple currencies
+4. handle refunds
+5. track transaction life cycle
+6. idempotency
+7. concurrent payment requests - no double charge
 
-payment details
-transaction
 
-paymentgateway(abc)
-stripe
-razorpay
-gatewayrouter
-paymentservice
+core entities:
+PaymentRequest
+Transaction
+PaymentDetails
+Refund
+TransactionLog
+GatewayResponse
+
+enums:
+PaymentStatus: PENDING, SUCCESS, FAILED, REFUNDED
+Currency: INR, USD, EUR
+PaymentMethod: CREDIT_CARD, DEBIT_CARD, UPI, NET_BANKING
+GatewayType: STRIPE, RAZORPAY
+RefundStatus: PENDING, SUCCESS, FAILED
+TransactionLogType: CREATED, GATEWAY_REQUESTED, GATEWAY_RESPONSE, STATUS_CHANGED, REFUND_INITIATED, REFUND_COMPLETED, RETRY
+
+PaymentGateway(ABC):
+- gateway_type
+- process_payment(payment_details, amount, currency)
+- process_refund(gateway_transaction_id, amount, currency)
+- check_status(gateway_transaction_id)
+
+GatewayRouter(ABC):
+- route(request)
+
+IdempotencyStrategy(ABC):
+- exists(idempotency_key)
+- get(idempotency_key)
+- store(idempotency_key, transaction)
+
+PaymentDetails:
+- method
+- card_number
+- card_expiry
+- upi_id
+- bank_code
+
+PaymentRequest:
+- request_id
+- idempotency_key
+- user_id
+- amount
+- currency
+- payment_details
+- description
+- metadata
+
+GatewayResponse:
+- success
+- gateway_transaction_id
+- gateway_type
+- status_code
+- error_message
+- raw_response
+
+Transaction:
+- log_id
+- transaction_id
+- log_type
+- old_status
+- new_status
+- gateway_response
+- message
+- timestamp
+
+Refund:
+- refund_id
+- transaction_id
+- amount
+- status
+- gateway_refund_id
+- reason
+- created_at
+
+StripeGateway(PaymentGateway):
+- gateway_type
+- process_payment
+- process_refund
+- check_status
+
+RazorpayGateway(PaymentGateway):
+- gateway_type
+- process_payment
+- process_refund
+- check_status
+
+PaymentService:
+- router
+- idempotency_store
+- transaction_store
+- transaction_locks
+- max_retries
+
+
 
 
 '''
