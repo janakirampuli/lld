@@ -1,3 +1,176 @@
+'''
+
+requirements:
+1. passenger requests ride: pickup, destination, ride type
+2. system matches nearest available driver
+3. driver accepts/declines
+4. fare calculated based on distance, time, ride type
+5. real time tracking during ride
+6. payment processed on ride completion
+7. concurrent ride requests -> thread-safe matching
+8. no double assignment of a driver
+
+core entities:
+User
+Passenger
+Driver
+Ride
+RideRequest
+Location
+Vehicle
+Payment
+Rating
+
+enums:
+RideType: REGULAR, PREMIUM, XL
+RideStatus: REQUESTED, MATCHED, ACCEPTED, IN_PROGRESS, COMPLETED, CANCELLED
+DriverStatus: AVAILABLE, BUSY, OFFLINE
+PaymentStatus: PENDING, SUCCESS, FAILED, REFUNDED
+VehicleType: SEDAN, SUV, LUXURY
+
+classes and interfaces:
+
+DriverMatchingStrategy()
+- match(request, drivers)
+
+FareCalculator()
+- calculate(distance_km, duration_min, ride_type)
+
+PaymentProcessor()
+- process_payment(amount, method)
+- process_refund(payment_id, amount)
+
+NotificationService()
+- notify(user_id, message)
+
+LocationTracker()
+- get_current_location(driver_id)
+- update_location(driver_id, location)
+
+Location:
+- latitude
+- longitude
+
+User:
+- user_id
+- name
+- email
+- phone
+
+Passenger(User):
+- ride_history
+- current_ride
+- payment_method
+
+Driver(User):
+- license_number
+- vehicle
+- status
+- current_location
+- rating
+- current_ride
+- ride_history
+
+Vehicle:
+- vehicle_id
+- license_plate
+- vehicle_type
+
+RideRequest:
+- request_id
+- passenger
+- pickup
+- destination
+- ride_type
+- request_time
+
+Ride:
+- ride_id
+- request
+- driver
+- passenger
+- pickup
+- destination
+- status
+- start_time
+- end_time
+- distance_km
+- duration_min
+- fare
+- payment
+
+Payment:
+- payment_id
+- ride_id
+- amount
+- method
+- status
+
+Rating:
+- rating_id
+- ride_id
+- rated_by
+- rated_for
+- score
+- comment
+
+RideSharingSystem:
+- drivers
+- passengers
+- active_riders
+- matching_strategy
+- fare_calculator
+- payment_processor
+- notification_service
+- location_tracker
+- request_queue
+
+RideService:
+- request_ride(passenger, pickup, destination, ride_type)
+- accept_ride(driver_id, ride_id)
+- decline_ride(driver_id, ride_id)
+- start_ride(ride_id)
+- complete_ride(ride_id)
+- cancel_ride(ride_id, cancelled_by)
+- rate_ride(ride_id, rated_by, score, comment)
+
+DriverService:
+- register_driver(driver)
+- update_location(driver_id, location)
+- set_availability(driver_id, status)
+- get_avialable_drivers(ride_type)
+
+NearestDriverStrategy(DriverMatchingStrategy):
+- match(request, deivers) -> Driver
+    filter by status, vehicle type matches ride type
+    sort by distance
+    return closest
+
+StandardFareCalculator(FareCalculator):
+- base_fare
+- per_km_rate
+- per_min_rate
+- calculate(distance_km, duration_min, ride_type)
+    base + per_km * distance_km + per_min_rate * duration_min
+
+concurrency handling:
+match_and_assign(request):
+    available = driver_service.get_avialable_drivers(request.ride_type)
+    driver = matching_strategy.match(request, available)
+    if driver is None: return None
+
+    with _driver_locks[driver.driver_id]:
+        if driver.status != AVAILABLE:
+            return match_and_assign(request)
+        driver.status = BUSY
+        driver.current_ride = ride
+    
+    notify driver
+    notify ride
+
+
+'''
+
 from enum import Enum
 import uuid
 import threading

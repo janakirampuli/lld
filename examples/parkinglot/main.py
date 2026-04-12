@@ -1,3 +1,112 @@
+'''
+
+requirements:
+1. multi-level lot, each level has spots of different types
+2. vehicle enters -> system assigns best spot -> ticket issued
+3. vehicle exists -> fee calculated -> spot released
+4. real time display of avilability per level/type
+5. concurrent entry/exit at multiple points
+6. thread-safe spot assignment(no double assign)
+
+core entities:
+ParkingLot
+Level
+ParkingSpot
+Vehicle
+Ticket
+EntryPoint
+ExitPoint
+DisplayBoard
+Payment
+
+enums:
+VehicleType: CAR, TRUCK, MOTORCYCLE
+SpotType: SMALL, MEDIUM, LARGE
+SpotStatus: AVAILABLE, OCCUPIED
+PaymentMethod: CASH, UPI, CARD
+PaymentStatus: PENDING, SUCCESS, FAILED
+
+classes and interfaces:
+
+ParkingStrategy:
+- find_spot(vehicle, levels)
+
+FeeCalculator:
+- calculate_fee(ticket)
+
+Vehicle:
+- license_plate
+- vehicle_type
+
+ParkingSpot:
+- spot_id
+- spot_number
+- spot_type
+- status
+- vehicle
+- assign(vehicle)
+- release()
+
+Level:
+- level_number
+- spots
+- available_count
+- get_available_spots
+
+Ticket:
+- ticket_id
+- vehicle
+- spot
+- entry_time
+- exit_time
+- amount
+
+Payment:
+- payement_id
+- ticket
+- amount
+- method
+- status
+
+DisplayBoard:
+- level
+- show_avialability()
+
+EntryPoint:
+- entry_id
+- process_entry(vehicle) -> Ticket
+
+ExitPoint:
+- exit_id
+- process_exit(ticket, payment_method) -> Payment
+
+ParkingLot:
+- levels
+- entry_points
+- exit_points
+- parking_strategy
+- fee_calculator
+- active_tickets: dick[str, Ticket] - {license_plate: Ticket}
+- spot_locks: dict[str, threading.Lock]
+- observers: list[DisplayBoard]
+
+NearestSpotStrategy(ParkingStrategy):
+- find_spot(vehicle, levels)
+    Map vehicle_type -> required SpotType
+    iterate levels from top to bottom
+    return first available spot of matching type
+    if no exact match -> try next larger SpotType
+
+HourlyFeeCalculator(FeeCalculator):
+- calculate_fee(ticket)
+    ceil(hours_parked) * rate[vehicle_type]
+
+
+
+
+'''
+
+
 from enum import Enum
 from abc import ABC
 from typing import Optional, List

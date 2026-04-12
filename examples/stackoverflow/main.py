@@ -1,11 +1,148 @@
 '''
-Docstring for examples.stackoverflow.main
 
-tag -> id, tag
-user -> id, name, reputation
-post(abstarct) -> id, content, author, creation time
-question(post) -> title, answers, comments, tags
-answer(post) -> question, votes, comments
+requirements:
+1. users can post questions(with tags), post answers, post comments on both questions/answers
+2. upvote/downvote questions and answers
+3. search by keywords, tags, user
+4. reputation system based on votes received and activity
+5. concurrent voting - no double voting by same user
+6. data consistency on vote + reputation update
+7. scalable content model
+
+core entities:
+
+User
+Question
+Answer
+Comment
+Vote
+Tag
+SearchCriteria
+
+enums:
+
+VoteType: UPVOTE, DOWNVOTE
+PostStatus: ACTIVE, CLOSED, DELETED
+QuestionStatus: OPEN, CLOSED, DUPLICATE
+AccountStatus: ACTIVE, SUSPENDED, DELETED
+
+classes and interfaces:
+
+Votable(ABC):
+- vote_id_map: {user_id: vote_type}
+- upvote_count
+- get_score()
+- add_vote(user_id, vote_type)
+- remove_vote(user_id)
+
+Commentable(ABC):
+- comments: list[Comment]
+- add_comment(comment)
+
+SearchService(ABC):
+- search(criteria: SearchCriteria) -> list[Question]
+
+ReputationService(ABC):
+- on_vote(post_author, voter, vote_type, is_question)
+- on_accept_answer(answer_author)
+- undo_vote(post_author, voter, vote_type, is_question)
+
+User:
+- user_id
+- reputation
+- account_status
+- questions
+- answers
+- created_at
+
+Tag:
+- tag_id
+- name
+- description
+- usage_count
+
+Question(Votable, Commentable):
+- question_id
+- title
+- body
+- author
+- tags
+- answers
+- accepted_answer
+- status
+- created_at
+- accept_answer(answer)
+
+Answer(Votable, Commentable):
+- answer_id
+- body
+- author
+- question_id
+- is_accpeted
+- status
+- created_at
+
+Comment:
+- comment_id
+- author
+- parent_id
+- created_at
+
+Vote:
+- vote_id
+- user_id
+- post_id
+- vote_type
+- created_at
+
+SearchCriteria:
+- keywords
+- tags
+- author_username
+
+StackOverflowSystem
+- user_service
+- question_service
+- vote_service
+- search_service
+- reputation_service
+- tag_service
+
+UserService:
+- users: dict[str, User]
+- register(user_name, email)
+- get_user(user_id)
+- get_user_questions(user_id)
+- get_user_answers(user_id)
+
+QuestionService:
+- questions: dict[str, Question]
+- answers: dict[str, Answer]
+- post_question(author, title, body, tag_names)
+- get_question(question_id)
+- post_answer(author, question_id, body)
+- add_comment(author, parent_id, body)
+- accept_answer(user_id, question_id, answer_id)
+- close_question(question_id)
+
+VoteService:
+- vote(user_id, post_id, vote_type)
+- undo_vote(user_id, post_id)
+
+TagService:
+- tags: dict[str, Tag]
+- tag_questions: dict[str, list[str]]
+- get_or_create(tag_name)
+- get_questions_by_tag(tag_name)
+
+ReputationServiceImpl(ReputationService):
+- adjust user.reputation based on voteType
+
+SearchServiceImpl(SearchService):
+- search(criteria)
+
+
+
 
 '''
 

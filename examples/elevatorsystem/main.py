@@ -1,3 +1,114 @@
+'''
+
+requirements:
+1. multiple elevators, multiple floors
+2. user presses button on floor(UP/DOWN) -> system assigns best elevator
+3. user enters elevator -> selects destination floor
+4. capacity limit per elevator
+5. optimal assignment: minimize the wait time
+6. thread-safe: multiple concurrent requests
+7. efficient order of stops per elevator
+
+core entities:
+
+ElevatorSystem
+Elevator
+Floor
+Request
+Door
+Display
+
+enums:
+
+Direction: UP, DOWN
+ElevatorStatus: MOVING, STOPPED, MAINTENACE, OUT_OF_SERVICE
+DoorStatus: OPEN, CLOSED
+RequestType: EXTERNAL, INTERNAL
+
+classes and interfaces:
+
+ElevatorAssignmentStrategy
+- assign(request, elevators)
+
+RequestScheduler:
+- schedule(elevator, floor)
+- get_next_stop(elevator)
+
+Floor:
+- floor_number
+- up_button
+- down_button
+- display
+
+Display:
+- current_floor
+- update(floor, direction)
+
+Door:
+- status
+- open()
+- close()
+
+Elevator:
+- elevator_id
+- current_floor
+- direction
+- status
+- capacity
+- current_load
+- door
+- display
+- scheduler
+- is_full()
+- add_stop(floor)
+- get_next_stop()
+- move()
+
+ExternalRequest:
+- source_floor
+- direction
+- timestamp
+
+InternalRequest:
+- elevator_id
+- destination_floor
+- timestamp
+
+Scheduling:
+LookScheduler(RequestScheduler):
+- up_stops
+- down_stops
+schedule(elevator, floor): add floor to approriate set based on ellevators current direction and floor's relative position
+- get_next_stop(elevator):
+
+ElevatorSystem
+- elevators
+- floors
+- assignment_startegy
+- request_queue
+- request_elevator(floor, direction)
+- select_floor(elevator_id, floor)
+- process_requests()
+
+NearestElevatorStrategy(ElevatorAssignmentStrategy):
+- assign(request, elevators)
+    filter not full, not in maontenance
+    prefer elevator already moving toward request floor
+    tiebreak: smallest absolute distance
+    fallback: most IDLE elevator
+    scoring: score = distance + direction_penalty
+
+
+concurrency:
+each elevator runs on its own thread, continuously calling move() in loop
+external/internal requests are pushed to request_queue
+    
+
+
+
+    
+'''
+
 from enum import Enum
 from typing import List, Set
 import threading

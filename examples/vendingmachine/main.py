@@ -1,3 +1,128 @@
+'''
+
+requirements:
+1. vending machine should support multiple products with different prices and quantities
+2. the machine should accept coins and notes of different denominations
+3. admin can restock products, collect the accumulated money
+4. concurrency: multiple users at machines
+5. data consistency on inventory and cash register
+
+core entities:
+
+VendineMachine
+Product
+Slot
+Inventory
+CashRegister
+Denomination
+Transaction
+
+enums:
+MachineState: IDLE, ACCEPTING_MONEY, DISPENSING, OUT_OF_SERVICE
+Denomination: COIN_1, COIN_2, COIN_5, COIN_10, NOTE_20, NOTE_50, NOTE_100
+TransactionStatus: IN_PROGRESS, COMPLETED, CANCELLED, FAILED
+
+state machine:
+IDLE -> user inserts money -> ACCEPTING_MONEY
+    insert more | select product
+        out of stock | insufficent funds | success
+        return $ -> IDLE | prompt user to add more -> ACCPTING_MONEY | DISPENSING -> dispense + change -> IDLE
+
+    cancel at any point in ACCEPTING_MONEY -> return all inserted -> IDLE
+
+classes and interfaces:
+
+VendingMachineState(ABC):
+- insert_money(machine, denomination)
+- select_product(machine, slot_code)
+- cancel(machine)
+- dispense(machine)
+
+ChangeStrtegy(ABC):
+- make_change(amount, available)
+
+Denomination:
+- COIN_1 = 1
+- COIN_2 = 2
+- COIN_5 = 5
+- COIN_10 = 10
+- NOTE_20 = 20
+- NOTE_50 = 50
+- NOTE_100 = 100
+
+Product:
+- product_id
+- name
+- price
+
+Slot:
+- slot_code
+- product
+- quantity
+- is_available()
+
+Inventory:
+- slots
+- get_slot(slot_code)
+- get_all_available()
+- restock(slot_code, product, quantity)
+
+CashRegister:
+- denominations: dict[Denomination, int]
+- total_amount()
+- add(denomination, count)
+- remove(denomination, count)
+- get_available()
+- collect_all()
+
+Transaction:
+- transaction_id
+- inserted_amount
+- total_inserted()
+- selected_slot
+- status
+- change_returned
+- created_at
+
+IdleState(VendingMachineState):
+- insert_money()
+- select_product: error
+- cancel: no-op
+- dispense: error
+
+AcceptingMoneyState(VendingMachineState):
+- insert_money()
+- select_product(slot_code)
+- cancel: return inserted money -> IdleState
+- dispense: error
+
+DispensingState(VendingMachineState):
+- insert_money: error
+- select_product: error
+- cancel: error(too late)
+- dispense: reduce inventory -> move money to register -> IdleState
+
+VendingMachine:
+- machine_id
+- state
+- inventory
+- cash_register
+- current_transaction
+- lock
+- insert_money(denomination)
+- select_product(slot_code)
+- cancel()
+- dispense()
+- get_display()
+- restock(slot_code, product, quantity)
+- collect_money()
+- set_out_of_service()
+
+GreedyChangeStrategy(ChangeStartegy):
+- make_change(amount, available)
+
+'''
+
 from typing import List, Dict
 from enum import Enum
 import threading

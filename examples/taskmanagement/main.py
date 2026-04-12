@@ -1,10 +1,113 @@
 '''
-Docstring for examples.taskmanagement.main
 
-user -> id, name, email
-task -> id, title, description, due date, priority, status, assigned user, assigned by
-task status -> enum (open, closed, resolved)
-taskmanager to manage
+requirements:
+1. allow users to create, read, update and delete tasks
+2. task should have title, descripton, due date, priority, status
+3. users should be able to assign task to other users and set reminders
+4. concurrent access to tasks and ensure data consistency
+
+
+core entities:
+
+User
+Task
+TaskHistory
+Reminder
+SearchCriteria
+
+
+enums:
+
+TaskStatus: PENDING, IN_PROGRESS, COMPLETED, DELETED
+TaskPriority: LOW, MEDIUM, HIGH, CRITICAL
+ReminderStatus: ACTIVE, TRIGGERED, CANCELLED
+ChangeType: CREATED, UPDATED, STATUS_CHANGED, ASSIGNED, DELETED, COMPLETED
+
+classes and interfaces:
+
+TaskRepository(ABC):
+- save(task)
+- get_by_id(task_id)
+- delete(task_id)
+- search(citeria)
+- get_tasks_by_user(user_id)
+
+NotificationService(ABC):
+- send(user_id, message)
+
+ReminderService(ABC):
+- schedule(reminder)
+- cancel(reminder_id)
+
+User:
+- user_id
+- created_tasks
+- assigned_tasks
+
+Task:
+- task_id
+- title
+- due_date
+- priority
+- status
+- created_by
+- assigned_to
+- reminders
+- history
+- created_at
+- updated_at
+
+TaskHistory:
+- history_id
+- task_id
+- change_type
+- field_change
+- old_value
+- new_value
+- changed_by
+- changed_at
+
+Reminder:
+- reminder_id
+- task_id
+- user_id
+- remind_at
+- status
+
+SearchCriteria:
+- priority
+- status
+- assigned_to
+- due_before
+- due_after
+- created_by
+- keyword
+- sort_by
+- sort_order
+
+TaskManagerSystem:
+- task_service
+- user_service
+- notification_service
+- reminder_service
+
+UserService:
+- users: dict[str, User]
+- register(name, email)
+- get_user(user_id)
+
+TaskService:
+- task_repo
+- task_locks: dict[str, threading.Lock]
+- create_task(user_id, title, description, due_date, priority)
+- update_task(user_id, task_id, **fields)
+- change_status(user_id, task_id, new_status)
+- assign_task(assigner_id, task_id, assignee_id)
+- delete_task(user_id, task_id)
+- add_reminder(user_id, task_id, remind_at)
+- mark_completed(user_id, task_id)
+- get_task_history(task_id)
+- search_tasks(criteria)
 
 
 '''

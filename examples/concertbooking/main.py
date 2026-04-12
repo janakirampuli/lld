@@ -1,3 +1,172 @@
+'''
+requirements:
+
+1. browse/search concerts by artist, venue, date, time
+2. view seating arrangement for a concert
+3. select seats -> purchase ticket
+4. waitlist for sold-out concerts
+5. booking confirmation via email/SMS
+6. cancel booking -> seat released -> waitlist notified
+7. concurrency: no double booking
+8. fair booking: firs-come first serve
+9. payment abstracted out behind interface
+10. scalable to multiple venues, concerts
+
+core entities:
+
+User
+Concert
+Venue
+Seat
+Booking
+Ticket
+Payment
+WailistEntry
+SearchCriteria
+
+enums:
+
+BookingStatus
+SeatStatus
+SeatType
+PaymentStatus
+PaymentMethod
+ConcertStatus
+NotificationType
+
+classes and interfaces:
+
+ConcertSearchSerice:
+- search(criteria: SearchCriteria) -> list[Concert]
+- get_concert_by_id(concert_id) -> Concert
+
+BookingService:
+- create_booking(user, concert, seat_ids, payment_method)
+- cancel_booking(booking_id)
+
+PaymentProcessor:
+- process_payment(amount, method)
+- process_refund(payment_id, amount)
+
+SeatManager:
+- get_available_seats(concert_id)
+- get_seat_map(concert_id)
+- lock_seats(concert_id, seat_ids)
+- book_seats(concert_id, seat_ids)
+- release_seats(concert_id, seat_ids)
+
+WaitlistManager:
+- add_to_waitlist(user, concert_id, num_seats, seat_type)
+- remove_from_waitlist(entry_id)
+- process_waitlist(concert_id, freed_seats)
+
+NotificationService:
+- send(user, message, notification_type)
+
+User:
+- user_id
+- name
+- email
+- phone
+- bookings
+
+Artist:
+- artist_id
+- name
+- genre
+
+Venue:
+- venue_id
+- name
+- location
+- capacity
+- seat_map
+
+SeatMap:
+- sections - e.g. {"GOLD": [Seat, ...], "VIP": [...]}
+- get_seats_by_type(seat_type)
+
+Seat:
+- seat_id
+- seat_number
+- section
+- status
+- price
+
+Concert:
+- concert_id
+- title
+- artist
+- venue
+- date_time
+- status
+- seat_map
+
+Booking:
+- booking_id
+- user
+- concert
+- tickets
+- payment
+- status
+- booking_time
+
+Ticket:
+- ticket_id
+- seat
+- concert
+- price
+
+Payment:
+- payment_id
+- amount
+- method
+- status
+- transaction_time
+
+WaitlistEntry:
+- entry_id
+- user
+- concert_id
+- num_seats
+- seat_type
+- added_time
+
+SearchCriteria:
+- artist_name
+- venue_name
+- date
+- time_range
+- seat_type
+
+ConcertBookingSystem:
+- main entry point
+- manages concert_search_service, booking_service, seat_manager, waitlist_manager, notification_servive
+- singleton
+
+ConcertManager:
+- add_concert(concert)
+- cancel_concert(concert_id)
+- get_all_concerts()
+- concerts
+
+BookingserviceImpl:
+- lock seats -> calculate total -> process payment -> confirm booking -> notify
+- on failure -> release seats -> return error
+- on cancel -> release seats -> process refund -> waitlist_manager.process_waitlist() -> notify
+- bookings
+
+SeatManagerImpl:
+- concert_seats - {concert_id: {seat_id: Seat}}
+- use Threading.Lock per (concert_id, seat_id)
+
+WaitlistManagerImpl:
+- waitlists - {concert_id: [entries]}
+- process_waitlist()
+
+
+'''
+
 import threading
 from enum import Enum
 from typing import List, Dict
